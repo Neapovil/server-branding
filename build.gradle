@@ -1,18 +1,36 @@
 plugins {
   id "java-library"
+  id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
 version = "1.18.2"
-group = "com.github.neapovil.brewery"
+group = "com.github.neapovil.serverbranding"
 compileJava.options.encoding = "UTF-8"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 repositories {
-  maven { url 'https://papermc.io/repo/repository/maven-public/' }
+  maven { url "https://papermc.io/repo/repository/maven-public/" }
+  maven { url "https://jitpack.io" }
+  maven { url "https://libraries.minecraft.net" }
+  flatDir { dirs "libs" }
   mavenCentral()
 }
 
 dependencies {
-  compileOnly group: 'io.papermc.paper', name: 'paper-api', version: '1.18.2-R0.1-SNAPSHOT'
+  compileOnly group: "io.papermc.paper", name: "paper-api", version: "1.18.2-R0.1-SNAPSHOT"
+  compileOnly group: "org.inventivetalent.packetlistenerapi", name: "api", version: "3.9.10-SNAPSHOT"
+  compileOnly group: "io.netty", name: "netty-all", version: "4.1.68.Final"
+  compileOnly group: "com.mojang", name: "datafixerupper", version: "4.1.27"
+
+  compileOnly name: "spigot-1.18.2-R0.1-SNAPSHOT"
+  
+  implementation group: "com.electronwill.night-config", name:"json", version: "3.6.6"
 }
+
+shadowJar {
+  classifier ""
+  relocate "com.electronwill.nightconfig", "com.github.neapovil.serverbranding.nightconfig"
+}
+
+build.dependsOn shadowJar
