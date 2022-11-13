@@ -1,21 +1,38 @@
 package com.github.neapovil.serverbranding;
 
+import org.bukkit.NamespacedKey;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.inventivetalent.packetlistener.PacketListenerAPI;
-import org.inventivetalent.packetlistener.handler.PacketHandler;
-import org.inventivetalent.packetlistener.handler.ReceivedPacket;
-import org.inventivetalent.packetlistener.handler.SentPacket;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import com.electronwill.nightconfig.core.file.FileConfig;
 
 import io.netty.buffer.Unpooled;
-import net.minecraft.network.PacketDataSerializer;
-import net.minecraft.network.protocol.game.PacketPlayOutCustomPayload;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import io.papermc.paper.network.ChannelInitializeListener;
+import io.papermc.paper.network.ChannelInitializeListenerHolder;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 
-public class ServerBranding extends JavaPlugin
+public class ServerBranding extends JavaPlugin implements Listener
 {
     private static ServerBranding instance;
     private FileConfig config;
+
+    @Override
+    public void onLoad()
+    {
+        ChannelInitializeListenerHolder.addListener(new NamespacedKey(this, "listener"), new ChannelInitializeListener() {
+            @Override
+            public void afterInitChannel(@NonNull Channel channel)
+            {
+                channel.pipeline().addBefore("packet_handler", "serverbranding", new CustomHandler());
+            }
+        });
+    }
 
     @Override
     public void onEnable()
@@ -31,34 +48,7 @@ public class ServerBranding extends JavaPlugin
 
         this.config.load();
 
-        PacketListenerAPI.addPacketHandler(new PacketHandler(this) {
-            @Override
-            public void onReceive(ReceivedPacket event)
-            {
-            }
-
-            @Override
-            public void onSend(SentPacket event)
-            {
-                if (!event.getPacketName().equals("PacketPlayOutCustomPayload"))
-                {
-                    return;
-                }
-
-                final PacketPlayOutCustomPayload packet = (PacketPlayOutCustomPayload) event.getPacket();
-
-                // minecraft:brand
-                if (!packet.b().equals(PacketPlayOutCustomPayload.a))
-                {
-                    return;
-                }
-
-                final PacketPlayOutCustomPayload packet1 = new PacketPlayOutCustomPayload(PacketPlayOutCustomPayload.a,
-                        new PacketDataSerializer(Unpooled.buffer()).a((String) config.get("brandName")));
-
-                event.setPacket(packet1);
-            }
-        });
+        this.getServer().getPluginManager().registerEvents(this, this);
     }
 
     @Override
@@ -69,5 +59,31 @@ public class ServerBranding extends JavaPlugin
     public static ServerBranding getInstance()
     {
         return instance;
+    }
+
+    class CustomHandler extends ChannelDuplexHandler
+    {
+        @Override
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
+        {
+            if (!(msg instanceof ClientboundCustomPayloadPacket))
+            {
+                super.write(ctx, msg, promise);
+                return;
+            }
+
+            final ClientboundCustomPayloadPacket packet = (ClientboundCustomPayloadPacket) msg;
+
+            if (!packet.getIdentifier().equals(ClientboundCustomPayloadPacket.BRAND))
+            {
+                super.write(ctx, msg, promise);
+                return;
+            }
+
+            final FriendlyByteBuf brand = new FriendlyByteBuf(Unpooled.buffer()).writeUtf((String) config.get("brandName"));
+            final ClientboundCustomPayloadPacket packet1 = new ClientboundCustomPayloadPacket(ClientboundCustomPayloadPacket.BRAND, brand);
+
+            super.write(ctx, packet1, promise);
+        }
     }
 }
