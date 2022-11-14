@@ -1,7 +1,6 @@
 package com.github.neapovil.serverbranding;
 
 import org.bukkit.NamespacedKey;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -17,7 +16,7 @@ import io.papermc.paper.network.ChannelInitializeListenerHolder;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 
-public class ServerBranding extends JavaPlugin implements Listener
+public class ServerBranding extends JavaPlugin
 {
     private static ServerBranding instance;
     private FileConfig config;
@@ -47,8 +46,6 @@ public class ServerBranding extends JavaPlugin implements Listener
                 .build();
 
         this.config.load();
-
-        this.getServer().getPluginManager().registerEvents(this, this);
     }
 
     @Override
