@@ -69,8 +69,8 @@ public class ServerBranding extends JavaPlugin
                     }
                     catch (IOException e)
                     {
-                        CommandAPI.failWithString("Unable to save the new server brand.");
                         this.getLogger().severe(e.getMessage());
+                        throw CommandAPI.failWithString("Unable to save the new server brand.");
                     }
                 })
                 .register();
